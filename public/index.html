@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>工装库房管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 主页面 -->
+    <div id="main-page" class="page">
+      <!-- 顶部状态栏 -->
+      <div class="header">
+        <div class="header-title">📦 工装库房</div>
+      </div>
+
+      <!-- 库位概览 -->
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat-item">
+          <span class="stat-num" id="stat-total">-</span>
+          <span class="stat-label">总库位</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" id="stat-occupied">-</span>
+          <span class="stat-label">已用</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" id="stat-vacant">-</span>
+          <span class="stat-label">空闲</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" id="stat-pct">-</span>
+          <span class="stat-label">占用率</span>
+        </div>
+      </div>
+
+      <!-- 内容区 -->
+      <div class="content">
+        <!-- 扫码页 -->
+        <div id="tab-scan" class="tab-panel active">
+          <div class="scan-area">
+            <div id="qr-reader" class="qr-reader"></div>
+            <div class="scan-actions">
+              <button class="btn btn-primary btn-lg" onclick="startScan()">📷 扫码</button>
+              <div class="manual-input">
+                <input type="text" id="manual-qr" placeholder="或手动输入工装编号">
+                <button class="btn btn-secondary" onclick="manualSubmit()">确认</button>
+              </div>
+            </div>
+          </div>
+          <div id="scan-result" class="result-card" style="display:none"></div>
+        </div>
+
+        <!-- 查询页 -->
+        <div id="tab-query" class="tab-panel">
+          <div class="search-bar">
+            <input type="text" id="query-input" placeholder="输入工装名称/编号/库位号">
+            <button class="btn btn-primary" onclick="doQuery()">查询</button>
+          </div>
+          <div id="query-results" class="result-list"></div>
+        </div>
+
+        <!-- 历史页 -->
+        <div id="tab-history" class="tab-panel">
+          <div class="filter-bar">
+            <input type="text" id="history-qr" placeholder="工装编号">
+            <input type="date" id="history-start">
+            <input type="date" id="history-end">
+            <button class="btn btn-primary" onclick="loadHistory()">查询</button>
+          </div>
+          <div id="history-list" class="result-list"></div>
+        </div>
+
+        <!-- 库位页 -->
+        <div id="tab-locations" class="tab-panel">
+          <div class="filter-bar">
+            <select id="loc-zone">
+              <option value="">全部区</option>
+            </select>
+            <select id="loc-status">
+              <option value="">全部状态</option>
+              <option value="occupied">已占用</option>
+              <option value="vacant">空闲</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadLocations()">查询</button>
+          </div>
+          <div id="location-list" class="result-list"></div>
+        </div>
+      </div>
+
+      <!-- 底部导航 -->
+      <nav class="bottom-nav">
+        <a class="nav-item active" data-tab="scan" onclick="switchTab('scan')">
+          <span class="nav-icon">📷</span>
+          <span class="nav-text">扫码</span>
+        </a>
+        <a class="nav-item" data-tab="query" onclick="switchTab('query')">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-text">查询</span>
+        </a>
+        <a class="nav-item" data-tab="history" onclick="switchTab('history')">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">流水</span>
+        </a>
+        <a class="nav-item" data-tab="locations" onclick="switchTab('locations')">
+          <span class="nav-icon">📍</span>
+          <span class="nav-text">库位</span>
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
