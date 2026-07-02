@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>工装库房管理</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #3370ff; --success: #34c724; --danger: #f54a45;
+      --warning: #ff9800; --bg: #f5f6f8; --card: #fff;
+      --text: #1f2329; --text2: #646a73; --border: #dee0e3;
+    }
+    body { font-family: -apple-system, "PingFang SC", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .header-title { font-size: 18px; font-weight: 600; }
+
+    .stats-bar { display: flex; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); gap: 8px; }
+    .stat-item { flex: 1; text-align: center; }
+    .stat-num { display: block; font-size: 20px; font-weight: 600; color: var(--primary); }
+    .stat-label { font-size: 12px; color: var(--text2); }
+
+    .content { padding: 12px 16px; padding-bottom: 80px; }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-lg { padding: 14px 32px; font-size: 17px; border-radius: 12px; width: 100%; max-width: 350px; }
+
+    .scan-area { text-align: center; }
+    .qr-reader { width: 100%; max-width: 350px; margin: 0 auto 16px; border-radius: 12px; overflow: hidden; }
+    .scan-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .manual-input { display: flex; gap: 8px; width: 100%; max-width: 350px; }
+    .manual-input input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
+    .manual-input input:focus { border-color: var(--primary); }
+
+    .result-card { background: var(--card); border-radius: 12px; padding: 20px; margin-top: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); white-space: pre-line; font-size: 15px; line-height: 1.6; }
+    .result-card.success { border-left: 4px solid var(--success); }
+    .result-card.error { border-left: 4px solid var(--danger); }
+    .result-card.warn { border-left: 4px solid var(--warning); }
+
+    .search-bar, .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .search-bar input, .filter-bar input, .filter-bar select { flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: var(--card); }
+    .search-bar input:focus { border-color: var(--primary); }
+
+    .result-list { display: flex; flex-direction: column; gap: 8px; }
+    .list-item { background: var(--card); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+    .list-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .list-item-name { font-weight: 600; font-size: 15px; }
+    .badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+    .badge-occupied { background: #fde8e8; color: var(--danger); }
+    .badge-vacant { background: #e8f8e8; color: var(--success); }
+    .badge-out { background: #fff3e0; color: var(--warning); }
+    .list-item-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+    .history-item { display: flex; align-items: center; gap: 12px; }
+    .history-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .history-icon.in { background: #e8f8e8; } .history-icon.out { background: #fde8e8; }
+    .history-info { flex: 1; min-width: 0; }
+    .history-action { font-weight: 600; font-size: 14px; }
+    .history-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--card); border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0; text-decoration: none; color: var(--text2); transition: color 0.2s; cursor: pointer; }
+    .nav-item.active { color: var(--primary); }
+    .nav-icon { font-size: 22px; } .nav-text { font-size: 11px; margin-top: 2px; }
+
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; animation: fadeInOut 2s ease; pointer-events: none; }
+    @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <div class="header-title">📦 工装库房</div>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-item"><span class="stat-num" id="stat-total">-</span><span class="stat-label">总库位</span></div>
+      <div class="stat-item"><span class="stat-num" id="stat-occupied">-</span><span class="stat-label">已用</span></div>
+      <div class="stat-item"><span class="stat-num" id="stat-vacant">-</span><span class="stat-label">空闲</span></div>
+      <div class="stat-item"><span class="stat-num" id="stat-pct">-</span><span class="stat-label">占用率</span></div>
+    </div>
+
+    <div class="content">
+      <div id="tab-scan" class="tab-panel active">
+        <div class="scan-area">
+          <div id="qr-reader" class="qr-reader"></div>
+          <div class="scan-actions">
+            <button class="btn btn-primary btn-lg" onclick="startScan()">📷 扫码出入库</button>
+            <div class="manual-input">
+              <input type="text" id="manual-qr" placeholder="或手动输入工装编号">
+              <button class="btn btn-secondary" onclick="manualSubmit()">确认</button>
+            </div>
+          </div>
+        </div>
+        <div id="scan-result" class="result-card" style="display:none"></div>
+      </div>
+
+      <div id="tab-query" class="tab-panel">
+        <div class="search-bar">
+          <input type="text" id="query-input" placeholder="工装名称/编号/库位号" onkeypress="if(event.key==='Enter')doQuery()">
+          <button class="btn btn-primary" onclick="doQuery()">查询</button>
+        </div>
+        <div id="query-results" class="result-list"></div>
+      </div>
+
+      <div id="tab-history" class="tab-panel">
+        <div class="filter-bar">
+          <input type="text" id="history-qr" placeholder="工装编号">
+          <button class="btn btn-primary" onclick="loadHistory()">查询</button>
+        </div>
+        <div id="history-list" class="result-list"></div>
+      </div>
+
+      <div id="tab-locations" class="tab-panel">
+        <div class="filter-bar">
+          <select id="loc-status" onchange="loadLocations()">
+            <option value="">全部状态</option>
+            <option value="occupied">已占用</option>
+            <option value="vacant">空闲</option>
+          </select>
+        </div>
+        <div id="location-list" class="result-list"></div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <a class="nav-item active" data-tab="scan" onclick="switchTab('scan')"><span class="nav-icon">📷</span><span class="nav-text">扫码</span></a>
+      <a class="nav-item" data-tab="query" onclick="switchTab('query')"><span class="nav-icon">🔍</span><span class="nav-text">查询</span></a>
+      <a class="nav-item" data-tab="history" onclick="switchTab('history')"><span class="nav-icon">📋</span><span class="nav-text">流水</span></a>
+      <a class="nav-item" data-tab="locations" onclick="switchTab('locations')"><span class="nav-icon">📍</span><span class="nav-text">库位</span></a>
+    </nav>
+  </div>
+
+  <script>
+    // ===== 数据存储（localStorage） =====
+    const DB = {
+      get(key) { return JSON.parse(localStorage.getItem('wh_' + key) || '[]'); },
+      set(key, val) { localStorage.setItem('wh_' + key, JSON.stringify(val)); },
+      init() {
+        if (!localStorage.getItem('wh_locations')) {
+          // 示例库位，实际部署时替换
+          const locs = [];
+          ['A','B','C'].forEach(z => {
+            for (let r = 1; r <= 5; r++) {
+              for (let p = 1; p <= 4; p++) {
+                locs.push({ code: `${z}-${String(r).padStart(2,'0')}-${String(p).padStart(2,'0')}`, tool: null, status: 'vacant' });
+              }
+            }
+          });
+          DB.set('locations', locs);
+        }
+        if (!localStorage.getItem('wh_tools')) DB.set('tools', []);
+        if (!localStorage.getItem('wh_logs')) DB.set('logs', []);
+      }
+    };
+    DB.init();
+
+    // ===== 统计 =====
+    function loadStats() {
+      const locs = DB.get('locations');
+      const total = locs.length;
+      const occupied = locs.filter(l => l.status === 'occupied').length;
+      const vacant = total - occupied;
+      const pct = total > 0 ? Math.round(occupied / total * 100) : 0;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-occupied').textContent = occupied;
+      document.getElementById('stat-vacant').textContent = vacant;
+      document.getElementById('stat-pct').textContent = pct + '%';
+    }
+
+    // ===== Tab 切换 =====
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+      if (tab !== 'scan' && scanning) stopScan();
+      if (tab === 'locations') loadLocations();
+      if (tab === 'history') loadHistory();
+    }
+
+    // ===== 扫码 =====
+    let html5QrCode = null, scanning = false;
+
+    function startScan() {
+      if (scanning) { stopScan(); return; }
+      const el = document.getElementById('qr-reader');
+      el.innerHTML = '';
+      html5QrCode = new Html5Qrcode('qr-reader');
+      scanning = true;
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (text) => { stopScan(); doScan(text); },
+        () => {}
+      ).catch(() => { scanning = false; showToast('📷 无法访问摄像头，请手动输入'); });
+    }
+
+    function stopScan() {
+      if (html5QrCode && scanning) {
+        html5QrCode.stop().then(() => { html5QrCode.clear(); scanning = false; }).catch(() => { scanning = false; });
+      }
+    }
+
+    function manualSubmit() {
+      const input = document.getElementById('manual-qr');
+      const val = input.value.trim();
+      if (!val) return showToast('请输入编号');
+      doScan(val);
+      input.value = '';
+    }
+
+    // 防重复扫
+    let lastScan = { id: '', time: 0 };
+
+    function doScan(qrId) {
+      const now = Date.now();
+      if (qrId === lastScan.id && now - lastScan.time < 5000) return showToast('⏳ 5秒内重复扫码');
+      lastScan = { id: qrId, time: now };
+
+      const resultEl = document.getElementById('scan-result');
+      resultEl.style.display = 'block';
+
+      // 查工装
+      const tools = DB.get('tools');
+      const tool = tools.find(t => t.qr_id === qrId);
+
+      if (!tool) {
+        resultEl.className = 'result-card error';
+        resultEl.textContent = `❌ 未找到工装: ${qrId}\n💡 请检查二维码或联系管理员`;
+        return;
+      }
+
+      const locs = DB.get('locations');
+      const loc = locs.find(l => l.tool === qrId);
+
+      if (loc) {
+        // 出库
+        loc.tool = null;
+        loc.status = 'vacant';
+        DB.set('locations', locs);
+        addLog(qrId, 'out', loc.code, tool.name);
+        loadStats();
+        resultEl.className = 'result-card success';
+        resultEl.textContent = `🔧 ${tool.name}\n⬇️ 出库成功\n📍 库位：${loc.code}\n🟢 该库位已释放`;
+      } else {
+        // 入库
+        const vacant = locs.filter(l => l.status === 'vacant').sort((a,b) => a.code.localeCompare(b.code))[0];
+        if (!vacant) {
+          const total = locs.length, occupied = locs.filter(l => l.status === 'occupied').length;
+          resultEl.className = 'result-card warn';
+          resultEl.textContent = `🚨 库位已满！\n总库位：${total} | 已用：${occupied} | 空闲：0\n请释放部分库位后再入库`;
+          return;
+        }
+        vacant.tool = qrId;
+        vacant.status = 'occupied';
+        DB.set('locations', locs);
+        addLog(qrId, 'in', vacant.code, tool.name);
+        loadStats();
+        resultEl.className = 'result-card success';
+        resultEl.textContent = `🔧 ${tool.name}\n⬆️ 入库成功\n📍 分配库位：${vacant.code}\n🔴 该库位已被占用`;
+      }
+    }
+
+    function addLog(qrId, action, code, toolName) {
+      const logs = DB.get('logs');
+      logs.unshift({ qr_id: qrId, action, code, tool: toolName, time: new Date().toLocaleString('zh-CN') });
+      if (logs.length > 500) logs.length = 500;
+      DB.set('logs', logs);
+    }
+
+    // ===== 查询 =====
+    function doQuery() {
+      const q = document.getElementById('query-input').value.trim().toLowerCase();
+      if (!q) return showToast('请输入查询内容');
+      const tools = DB.get('tools');
+      const locs = DB.get('locations');
+      const results = tools.filter(t =>
+        t.qr_id.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)
+      ).map(t => {
+        const loc = locs.find(l => l.tool === t.qr_id);
+        return { ...t, location: loc ? loc.code : null, status: loc ? loc.status : 'out_of_warehouse' };
+      });
+
+      const el = document.getElementById('query-results');
+      if (!results.length) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>未找到匹配工装</p></div>'; return; }
+      el.innerHTML = results.map(r => {
+        const bc = r.status === 'occupied' ? 'badge-occupied' : r.status === 'vacant' ? 'badge-vacant' : 'badge-out';
+        const st = r.status === 'occupied' ? '在库' : r.status === 'vacant' ? '空闲' : '不在库';
+        return `<div class="list-item"><div class="list-item-header"><span class="list-item-name">🔧 ${r.name}</span><span class="badge ${bc}">${st}</span></div><div class="list-item-detail">编号: ${r.qr_id}<br>${r.location ? '📍 ' + r.location : '📍 不在库'}<br>${r.responsible ? '👤 ' + r.responsible : ''}</div></div>`;
+      }).join('');
+    }
+
+    // ===== 流水 =====
+    function loadHistory() {
+      const logs = DB.get('logs');
+      const filter = document.getElementById('history-qr').value.trim().toLowerCase();
+      const filtered = filter ? logs.filter(l => l.qr_id.toLowerCase().includes(filter)) : logs;
+      const el = document.getElementById('history-list');
+      if (!filtered.length) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><p>暂无记录</p></div>'; return; }
+      el.innerHTML = filtered.slice(0, 100).map(l => {
+        const isIn = l.action === 'in';
+        return `<div class="list-item history-item"><div class="history-icon ${isIn?'in':'out'}">${isIn?'⬆️':'⬇️'}</div><div class="history-info"><div class="history-action">${isIn?'入库':'出库'} · ${l.qr_id}</div><div class="history-detail">📍 ${l.code} · ${l.tool} · ${l.time}</div></div></div>`;
+      }).join('');
+    }
+
+    // ===== 库位 =====
+    function loadLocations() {
+      const locs = DB.get('locations');
+      const statusFilter = document.getElementById('loc-status').value;
+      const filtered = statusFilter ? locs.filter(l => l.status === statusFilter) : locs;
+      const total = locs.length, occupied = locs.filter(l => l.status === 'occupied').length;
+      const el = document.getElementById('location-list');
+      el.innerHTML = `<div style="font-size:13px;color:#666;margin-bottom:8px">共 ${total} 个库位 · 已用 ${occupied} · 空闲 ${total-occupied}</div>` +
+        filtered.sort((a,b) => a.code.localeCompare(b.code)).map(l =>
+          `<div class="list-item"><div class="list-item-header"><span class="list-item-name">📍 ${l.code}</span><span class="badge ${l.status==='occupied'?'badge-occupied':'badge-vacant'}">${l.status==='occupied'?'已占用':'空闲'}</span></div>${l.tool?`<div class="list-item-detail">🔧 ${l.tool}</div>`:''}</div>`
+        ).join('');
+    }
+
+    // ===== Toast =====
+    function showToast(msg) {
+      const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+      document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
+    }
+
+    // ===== 启动 =====
+    loadStats();
+  </script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</body>
+</html>
